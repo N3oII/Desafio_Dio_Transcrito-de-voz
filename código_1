@@ -1,0 +1,32 @@
+import sounddevice as sd   # Para capturar áudio do microfone
+import wave                # Para salvar o áudio em formato WAV
+from openai import OpenAI  # Cliente da API OpenAI
+
+# Configure sua chave da API
+client = OpenAI(api_key="SUA_CHAVE_OPENAI")
+
+# Função para gravar áudio
+def gravar_audio(nome_arquivo="entrada.wav", duracao=5, fs=16000):
+    print("Gravando...")
+    audio = sd.rec(int(duracao * fs), samplerate=fs, channels=1, dtype='int16')
+    sd.wait()  # Espera terminar a gravação
+    with wave.open(nome_arquivo, 'wb') as f:
+        f.setnchannels(1)       # Mono
+        f.setsampwidth(2)       # 16 bits
+        f.setframerate(fs)      # Taxa de amostragem
+        f.writeframes(audio.tobytes())
+    print("Áudio salvo em", nome_arquivo)
+
+# Função para transcrever com Whisper
+def transcrever_audio(nome_arquivo="entrada.wav"):
+    with open(nome_arquivo, "rb") as f:
+        resposta = client.audio.transcriptions.create(
+            model="whisper-1",  # Modelo Whisper
+            file=f
+        )
+    return resposta.text
+
+# Fluxo simples: grava e transcreve
+gravar_audio()  # Grava 5 segundos de áudio
+texto = transcrever_audio()  # Transcreve o áudio
+print("Transcrição:", texto)  # Mostra o texto
